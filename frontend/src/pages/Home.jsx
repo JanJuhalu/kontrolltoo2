@@ -6,25 +6,23 @@ import { ArrowDown, ArrowUp, Check, ShoppingBag } from "lucide-react"
 import { Link } from 'react-router-dom'
 
 function Home() {
-  const [allProducts, setAllProducts] = useState([]);
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [sort, setSort] = useState("id,asc")
   const [size, setSize] = useState(2)
-  const CATEGORIES_API_URL = "https://69933cce8f29113acd406d64.mockapi.io/categories"
-
+  const CATEGORIES_API_URL = "http://localhost:8080/categories"
+  const PRODUCTS_API_URL = "http://localhost:8080/products"
   useEffect(() => {
-      fetch(CATEGORIES_API_URL)
+      fetch("http://localhost:8080/categories")
         .then((response) => response.json())
         .then((json) => setCategories(json))
     }, [])
 
   useEffect(() => {
-     fetch("https://69933cce8f29113acd406d64.mockapi.io/products")
+     fetch("http://localhost:8080/products")
       .then(res => res.json())
       .then(json => {
-        setAllProducts(json)
         setProducts(json)
       })
   }, [selectedCategory, sort, size]);
