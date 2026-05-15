@@ -7,50 +7,71 @@ import { Link } from 'react-router-dom'
 
 function Home() {
   const [categories, setCategories] = useState([])
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState([])
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [sort, setSort] = useState("id,asc")
   const [size, setSize] = useState(2)
+  const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+
   const CATEGORIES_API_URL = "http://localhost:8080/categories"
   const PRODUCTS_API_URL = "http://localhost:8080/products"
-  useEffect(() => {
-      fetch("http://localhost:8080/categories")
-        .then((response) => response.json())
-        .then((json) => setCategories(json))
-    }, [])
 
   useEffect(() => {
-     fetch("http://localhost:8080/products")
+    fetch(CATEGORIES_API_URL)
+      .then((response) => response.json())
+      .then((json) => setCategories(json))
+  }, [])
+
+  useEffect(() => {
+    let url = PRODUCTS_API_URL + "?page=" + page + "&size=" + size + "&sort=" + sort
+
+    if (selectedCategory !== "all") {
+      url = url + "&category=" + selectedCategory
+    }
+
+    fetch(url)
       .then(res => res.json())
       .then(json => {
-        setProducts(json)
+        setProducts(json.content)
+        setTotalPages(json.totalPages)
       })
-  }, [selectedCategory, sort, size]);
+  }, [selectedCategory, sort, size, page])
 
   const sortAZ = () => {
-    setSort("name,asc")
+    setPage(0)
+    setSort("title,asc")
   }
 
   const sortZA = () => {
-    setSort("name,desc")
+    setPage(0)
+    setSort("title,desc")
   }
 
   const sortPriceIncreasing = () => {
-     setSort("price,asc")
+    setPage(0)
+    setSort("price,asc")
   }
 
   const sortPriceDecreasing = () => {
+    setPage(0)
     setSort("price,desc")
   }
 
   const filterByCategory = (category) => {
+    setPage(0)
     setSelectedCategory(category)
   }
 
+  const changeSize = (newSize) => {
+    setPage(0)
+    setSize(newSize)
+  }
+
   const addToCart = (product) => {
-    const cartLS = JSON.parse(localStorage.getItem("cart")) || [];
-    cartLS.push(product);
-    localStorage.setItem("cart", JSON.stringify(cartLS));
+    const cartLS = JSON.parse(localStorage.getItem("cart")) || []
+    cartLS.push(product)
+    localStorage.setItem("cart", JSON.stringify(cartLS))
   }
 
   return (
@@ -67,29 +88,31 @@ function Home() {
       <div className="flex items-center gap-2">
         <label htmlFor="category-filter">Choose category</label>
         <select onChange={(e) => filterByCategory(e.target.value)}>
-          {categories.map(category => 
-            <option>{category.name}</option>
+          <option value="all">All</option>
+          {categories.map(category =>
+            <option key={category.id} value={category.name}>{category.name}</option>
           )}
         </select>
       </div>
 
       <div className="flex items-center gap-2">
-        <label htmlFor="category-filter">Choose size</label>
-        <select onChange={(e) => setSize(e.target.value)}>
-          <option>2</option>
-          <option>3</option>
+        <label htmlFor="size-filter">Choose size</label>
+        <select value={size} onChange={(e) => changeSize(e.target.value)}>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="5">5</option>
         </select>
       </div>
 
+      <div>{products.length} items currently on this page.</div>
 
-      <div>{products.length} items currently in stock.</div>
-      {products.map((product, index) => 
+      {products.map((product, index) =>
         <div key={product.id} className="grid w-full grid-cols-[2rem_100px_minmax(0,1fr)_auto] items-center gap-4 py-8">
-          <div className="text-right">{index + 1}.</div>
+          <div className="text-right">{page * size + index + 1}.</div>
           <img className="w-[100px] h-[100px] object-cover" src={product.image} alt={product.description} />
           <div className="min-w-0">
-            <div>{product.title}</div> 
-            <div>{product.price}€</div> 
+            <div>{product.title}</div>
+            <div>{product.price}€</div>
           </div>
           <div className="justify-self-end flex gap-2">
             <Button asChild variant="outline">
@@ -103,14 +126,26 @@ function Home() {
                 toast("Product has been added to the cart.", {
                   icon: <Check className="h-4 w-4" />,
                 })
-              }} 
+              }}
             >
               <ShoppingBag />
             </Button>
           </div>
         </div>
       )}
-      {/* <div className="mt-2">Total: {calculateTotal()} €</div> */}
+
+      <div className="flex items-center gap-3">
+        <Button disabled={page === 0} onClick={() => setPage(page - 1)}>
+          Previous
+        </Button>
+
+        <div>Page {page + 1} / {totalPages === 0 ? 1 : totalPages}</div>
+
+        <Button disabled={page + 1 >= totalPages} onClick={() => setPage(page + 1)}>
+          Next
+        </Button>
+      </div>
+
       <Toaster position="top-center" />
     </div>
   )
