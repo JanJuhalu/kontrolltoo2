@@ -14,8 +14,7 @@ import { Toaster } from "@/components/ui/sonner"
 import { toast } from "sonner"
 import { Check } from "lucide-react"
 
-const PRODUCTS_API_URL = "https://69933cce8f29113acd406d64.mockapi.io/products"
-const CATEGORIES_API_URL = "https://69933cce8f29113acd406d64.mockapi.io/categories"
+const BACKEND_URL = import.meta.env.VITE_BACK_URL
 
 const INITIAL_PRODUCT = {
   title: "",
@@ -30,7 +29,7 @@ function AddProduct() {
   const [categories, setCategories] = useState([])
 
   useEffect(() => {
-    fetch(CATEGORIES_API_URL)
+    fetch(BACKEND_URL + "/categories")
       .then((response) => response.json())
       .then((json) => setCategories(json))
   }, [])
@@ -42,24 +41,38 @@ function AddProduct() {
     }))
   }
 
-  const submitProduct = async () => {
+  const submitProduct = () => {
     const payload = {
       title: product.title,
       price: Number(product.price),
       description: product.description,
       category: product.category,
       image: product.image,
+      active: true
     }
 
-    await fetch(PRODUCTS_API_URL, {
+    fetch(BACKEND_URL + "/products", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
     })
-
-    setProduct(INITIAL_PRODUCT)
+      .then((res) => {
+        if (res.ok === false) {
+          throw new Error("Product was not added")
+        }
+        return res.json()
+      })
+      .then(() => {
+        setProduct(INITIAL_PRODUCT)
+        toast("Product has been added.", {
+          icon: <Check className="h-4 w-4" />,
+        })
+      })
+      .catch(() => {
+        toast("Product was not added. Check title, price and image.")
+      })
   }
 
   return (
@@ -128,12 +141,7 @@ function AddProduct() {
 
         <Button
           type="button"
-          onClick={async () => {
-            await submitProduct()
-            toast("Product has been added to the cart.", {
-              icon: <Check className="h-4 w-4" />,
-            })
-          }}
+          onClick={submitProduct}
         >
           Add Product
         </Button>
